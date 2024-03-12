@@ -1,6 +1,8 @@
 import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
+
+import "./generation.ts";
 import "./App.css";
 
 let test_data = [
@@ -37,48 +39,46 @@ let test_data = [
     ],
 ];
 
-function textToSentences(text: String) {
-    text.replace(
-        /(\.+|\:|\!|\?)(\"*|\'*|\)*|}*|]*)(\s|\n|\r|\r\n)/gm,
-        "$1$2|"
-    ).split("|");
+function textToSentences(text: String): string[] {
+    return text
+        .replace(/(\.+|\:|\!|\?)(\"*|\'*|\)*|}*|]*)(\s|\n|\r|\r\n)/gm, "$1$2|")
+        .split("|");
 }
-
-
-function 
 class DialogueEntry {
-  speaker: String;
-  sentences: Array<String>
+    speaker: string;
+    sentences: Array<string>;
+
+    public constructor(speaker: string, sentences: Array<string>) {
+        this.speaker = speaker;
+        this.sentences = sentences;
+    }
 }
 
+const dialogue: DialogueEntry[] = [];
+for (const [id, text] of test_data) {
+    const sentences = textToSentences(text);
+    const d = new DialogueEntry(id, sentences);
+    dialogue.push(d);
+}
+console.log(dialogue);
 
 function App() {
-    const [count, setCount] = useState(0);
     const [highlight, setHighlight] = useState(false);
-    const;
+    const transcript_entries = dialogue.map((d) => (
+        <>
+            <h3>{d.speaker}</h3>
+            <p>{d.sentences.join(" ")}</p>
+        </>
+    ));
     return (
         <>
-            <div>
-                <a href="https://vitejs.dev" target="_blank">
-                    <img src={viteLogo} className="logo" alt="Vite logo" />
-                </a>
-                <a href="https://react.dev" target="_blank">
-                    <img
-                        src={reactLogo}
-                        className="logo react"
-                        alt="React logo"
-                    />
-                </a>
-            </div>
-            <h1>Vite + React</h1>
+            {transcript_entries}
             <div className="card">
                 <button onClick={() => setHighlight((highlight) => !highlight)}>
                     {highlight ? "ON" : "OFF"}
                 </button>
-                <p>
-                    Edit <code>src/App.tsx</code> and save to test HMR
-                </p>
             </div>
+            <h3>name</h3>
             <p className="read-the-docs">
                 Click on the Vite and React logos to learn more
             </p>
