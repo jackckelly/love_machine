@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 
@@ -46,44 +46,127 @@ function textToSentences(text: String): string[] {
 }
 class DialogueEntry {
     speaker: string;
-    sentences: Array<string>;
+    text: string;
 
-    public constructor(speaker: string, sentences: Array<string>) {
+    public constructor(speaker: string, text: string) {
         this.speaker = speaker;
-        this.sentences = sentences;
+        this.text = text;
+    }
+}
+
+class Highlights {
+    highlights: Highlight[];
+    constructor() {
+        this.highlights = [];
+    }
+
+    withUpdate(index: number, start: number, end: number): Highlights {
+        const next = new Highlights();
+        for (const h of this.highlights) {
+            next.highlights.push(new Highlight(h.index, h.start, h.end));
+        }
+        next.highlights.push(new Highlight(index, start, end));
+        return next;
+    }
+}
+
+class Highlight {
+    index: number;
+    start: number;
+    end: number;
+
+    constructor(index: number, start: number, end: number) {
+        this.index = index;
+        this.start = start;
+        this.end = end;
     }
 }
 
 const dialogue: DialogueEntry[] = [];
 for (const [id, text] of test_data) {
-    const sentences = textToSentences(text);
-    const d = new DialogueEntry(id, sentences);
+    //const sentences = textToSentences(text);
+    const d = new DialogueEntry(id, text);
     dialogue.push(d);
 }
 console.log(dialogue);
 
 function App() {
-    const [highlight, setHighlight] = useState(false);
-    const transcript_entries = dialogue.map((d) => (
-        <>
-            <h3>{d.speaker}</h3>
-            <p>{d.sentences.join(" ")}</p>
-        </>
-    ));
-    return (
-        <>
-            {transcript_entries}
-            <div className="card">
-                <button onClick={() => setHighlight((highlight) => !highlight)}>
-                    {highlight ? "ON" : "OFF"}
-                </button>
-            </div>
-            <h3>name</h3>
-            <p className="read-the-docs">
-                Click on the Vite and React logos to learn more
-            </p>
-        </>
-    );
+    // const [highlight, setHighlight] = useState(false);
+    const [transcriptIndex, setTranscriptIndex] = useState(-1);
+    const [highlightStart, setHighlightStart] = useState(-1);
+    const [transcript, setTranscript] = useState({});
+    const [highlights, setHighlights] = useState(new Highlights());
+
+    const handleMouseUp = useCallback((e: MouseEvent) => {
+        setHighlightStart(() => -1);
+        setTranscriptIndex(() => {
+            console.log("updating index to", -1);
+            return -1;
+        });
+        console.log("no highlight");
+    }, []);
+
+    useEffect(() => {
+        document.addEventListener("mouseup", handleMouseUp);
+        return () => document.removeEventListener("mouseup", handleMouseUp);
+    });
+
+    const handleHighlightStart = (index: number, start: number) => {
+        setTranscriptIndex(() => {
+            console.log("updating index to", index);
+            return index;
+        });
+        setHighlightStart(() => start);
+        console.log(
+            `highlight starts: transcript entry: ${index}, word ${start}`
+        );
+    };
+
+    const handleHighlightEnd = (index: number, end: number) => {
+        const start = highlightStart;
+        const prev_index = transcriptIndex;
+        setTranscriptIndex(() => {
+            console.log("updating index to", -1);
+            return -1;
+        });
+        setHighlightStart(() => -1);
+
+        if (index === prev_index) {
+            // account for "backwards" highlights
+            const first = Math.min(start, end);
+            const last = Math.max(start, end);
+
+            console.log(
+                `highlight ends: transcript entry: ${index}, ${first} to ${last}`
+            );
+            setHighlights((current) => current.withUpdate(index, first, last));
+        } else {
+            console.log(index, prev_index);
+            console.log("no highlight; mismatched indices");
+        }
+    };
+
+    const transcript_entries = dialogue.map((d, i) => {
+        const text = d.text.split(" ").map((x, j) => (
+            <span
+                id={d.speaker + "_" + { i } + "_" + { j }}
+                onMouseDown={(e) => handleHighlightStart(i, j)}
+                onMouseUp={(e) => {
+                    e.stopPropagation();
+                    handleHighlightEnd(i, j);
+                }}
+            >
+                {x}{" "}
+            </span>
+        ));
+        return (
+            <>
+                <h3>{d.speaker}</h3>
+                <div>{text}</div>
+            </>
+        );
+    });
+    return <>{transcript_entries}</>;
 }
 
 export default App;
