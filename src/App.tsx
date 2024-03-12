@@ -55,43 +55,74 @@ class DialogueEntry {
 }
 
 class Highlights {
-    highlights: Highlight[];
+    highlights: Map<number, [number, number][]>;
     constructor() {
-        this.highlights = [];
+        this.highlights = new Map<number, [number, number][]>();
     }
 
     withUpdate(index: number, start: number, end: number): Highlights {
         const next = new Highlights();
-        for (const h of this.highlights) {
-            next.highlights.push(new Highlight(h.index, h.start, h.end));
+        for (const [i, ranges] of this.highlights) {
+            if (i !== index) {
+                next.highlights.set(i, ranges);
+            }
         }
-        next.highlights.push(new Highlight(index, start, end));
+        const current_ranges: [number, number][] =
+            this.highlights.get(index) || [];
+        const new_ranges: [number, number][] = [];
+        let candidate_range: [number, number] = [start, end];
+        let add_candidate = true;
+
+        for (const [start_2, end_2] of current_ranges) {
+            if (end >= start_2 && start <= end_2) {
+                // okay, the two ranges overlap
+
+                // Case one, it expands the selection
+                if (start < start_2 || end > end_2) {
+                    candidate_range = [
+                        Math.min(start, start_2),
+                        Math.max(end, end_2),
+                    ];
+                }
+                // Case two, it deletes part of the selection
+                else if (start == start_2 && end == end_2) {
+                    // no op
+                    add_candidate = false;
+                } else if (start == start_2 && end < end_2) {
+                    new_ranges.push([end + 1, end_2]);
+                    add_candidate = false;
+                } else if (start > start_2 && end == end_2) {
+                    new_ranges.push([start_2, start - 1]);
+                    add_candidate = false;
+                } else {
+                    new_ranges.push([start_2, start - 1]);
+                    new_ranges.push([end + 1, end_2]);
+                    add_candidate = false;
+                }
+            } else {
+                new_ranges.push([start_2, end_2]);
+            }
+        }
+        if (add_candidate) {
+            new_ranges.push(candidate_range);
+        }
+        next.highlights.set(index, new_ranges);
+
         return next;
     }
 
     isHighlighted(index: number, word: number): boolean {
-        for (const highlight of this.highlights) {
-            if (
-                index === highlight.index &&
-                word >= highlight.start &&
-                word <= highlight.end
-            ) {
+        let ranges = this.highlights.get(index);
+
+        if (ranges === undefined) {
+            return false;
+        }
+        for (const [start, end] of ranges) {
+            if (word >= start && word <= end) {
                 return true;
             }
         }
         return false;
-    }
-}
-
-class Highlight {
-    index: number;
-    start: number;
-    end: number;
-
-    constructor(index: number, start: number, end: number) {
-        this.index = index;
-        this.start = start;
-        this.end = end;
     }
 }
 
@@ -185,11 +216,17 @@ function App() {
         return (
             <>
                 <h3>{d.speaker}</h3>
-                <div>{text}</div>
+                <div className="text_container">{text}</div>
             </>
         );
     });
-    return <>{transcript_entries}</>;
+    return (
+        <div className="row">
+            <div id="transcript">{transcript_entries}</div>
+            <div id="edited">column 2</div>
+            <div id="extra">column 3</div>
+        </div>
+    );
 }
 
 export default App;
