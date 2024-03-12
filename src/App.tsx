@@ -68,6 +68,19 @@ class Highlights {
         next.highlights.push(new Highlight(index, start, end));
         return next;
     }
+
+    isHighlighted(index: number, word: number): boolean {
+        for (const highlight of this.highlights) {
+            if (
+                index === highlight.index &&
+                word >= highlight.start &&
+                word <= highlight.end
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 class Highlight {
@@ -139,7 +152,12 @@ function App() {
             console.log(
                 `highlight ends: transcript entry: ${index}, ${first} to ${last}`
             );
-            setHighlights((current) => current.withUpdate(index, first, last));
+            setHighlights((current) => {
+                console.log(current.highlights);
+                const newHighlights = current.withUpdate(index, first, last);
+                console.log(newHighlights.highlights);
+                return newHighlights;
+            });
         } else {
             console.log(index, prev_index);
             console.log("no highlight; mismatched indices");
@@ -149,12 +167,17 @@ function App() {
     const transcript_entries = dialogue.map((d, i) => {
         const text = d.text.split(" ").map((x, j) => (
             <span
-                id={d.speaker + "_" + { i } + "_" + { j }}
+                key={`${d.speaker}_${i}_${j}`}
                 onMouseDown={(e) => handleHighlightStart(i, j)}
                 onMouseUp={(e) => {
                     e.stopPropagation();
                     handleHighlightEnd(i, j);
                 }}
+                className={
+                    highlights.isHighlighted(i, j)
+                        ? "span_highlighted"
+                        : "span_normal"
+                }
             >
                 {x}{" "}
             </span>

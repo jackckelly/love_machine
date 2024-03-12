@@ -3,14 +3,16 @@
     line-height: 1.5;
     font-weight: 400;
 
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
+    color: rgb(0, 0, 0);
+    background-color: whitesmoke;
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+::selection {
+    background: yellow;
 }
 
 a {
@@ -37,6 +39,10 @@ h3 {
 h1 {
     font-size: 3.2em;
     line-height: 1.1;
+}
+
+.span_highlighted {
+    background-color: yellow;
 }
 
 button {
