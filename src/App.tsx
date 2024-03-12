@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 
-import "./generation.ts";
+import { generateTranscript } from "./generation.ts";
 import "./App.css";
 
 let test_data = [
@@ -106,6 +106,11 @@ class Highlights {
         if (add_candidate) {
             new_ranges.push(candidate_range);
         }
+
+        //console.log(new_ranges);
+        new_ranges.sort((a, b) => a[0] - b[0]);
+        //console.log(new_ranges);
+
         next.highlights.set(index, new_ranges);
 
         return next;
@@ -138,7 +143,7 @@ function App() {
     // const [highlight, setHighlight] = useState(false);
     const [transcriptIndex, setTranscriptIndex] = useState(-1);
     const [highlightStart, setHighlightStart] = useState(-1);
-    const [transcript, setTranscript] = useState({});
+    const [transcript, setTranscript] = useState(dialogue);
     const [highlights, setHighlights] = useState(new Highlights());
 
     const handleMouseUp = useCallback((e: MouseEvent) => {
@@ -164,6 +169,19 @@ function App() {
         console.log(
             `highlight starts: transcript entry: ${index}, word ${start}`
         );
+    };
+
+    const handleRegenerate = () => {
+        generateTranscript().then((value) => {
+            let new_transcript: DialogueEntry[] = [];
+            for (const [id, text] of value) {
+                //const sentences = textToSentences(text);
+                const d = new DialogueEntry(id, text);
+                new_transcript.push(d);
+            }
+            setTranscript(() => new_transcript);
+            setHighlights(() => new Highlights());
+        });
     };
 
     const handleHighlightEnd = (index: number, end: number) => {
@@ -195,7 +213,7 @@ function App() {
         }
     };
 
-    const transcript_entries = dialogue.map((d, i) => {
+    const transcript_entries = transcript.map((d, i) => {
         const text = d.text.split(" ").map((x, j) => (
             <span
                 key={`${d.speaker}_${i}_${j}`}
@@ -220,11 +238,54 @@ function App() {
             </>
         );
     });
+
+    const jsx_rows = [];
+
+    const num_entries = transcript.length;
+    let current_speaker = "";
+    let text_buffer = [];
+    for (let i = 0; i < num_entries; i++) {
+        for (const [start, end] of highlights.highlights.get(i) || []) {
+            if (transcript[i].speaker != current_speaker) {
+                current_speaker = transcript[i].speaker;
+                if (text_buffer.length != 0) {
+                    jsx_rows.push(
+                        <div className="text_container">
+                            {text_buffer.join(" ... ")}
+                        </div>
+                    );
+                    text_buffer = [];
+                }
+                jsx_rows.push(<h3>{current_speaker}</h3>);
+            }
+            text_buffer.push(
+                transcript[i].text
+                    .split(" ")
+                    .slice(start, end + 1)
+                    .join(" ")
+            );
+        }
+    }
+    if (text_buffer.length != 0) {
+        jsx_rows.push(
+            <div className="text_container">{text_buffer.join(" ... ")}</div>
+        );
+        text_buffer = [];
+    }
+
     return (
         <div className="row">
-            <div id="transcript">{transcript_entries}</div>
-            <div id="edited">column 2</div>
-            <div id="extra">column 3</div>
+            <div id="transcript">
+                <h2>ORIGINAL</h2>
+                {transcript_entries}
+            </div>
+            <div id="edited">
+                <h2>EDIT</h2>
+                {jsx_rows}
+            </div>
+            <div id="extra">
+                <button onClick={(e) => handleRegenerate()}>Regenerate</button>
+            </div>
         </div>
     );
 }

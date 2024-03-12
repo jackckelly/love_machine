@@ -43,14 +43,14 @@ h3 {
     min-width: 30%;
 }
 
+h2 {
+    text-align: left;
+    font-style: bold;
+}
 #transcript,
 #edited,
 #extra {
     min-width: 33%;
     max-width: 33%;
-}
-
-#edited {
-    display: flex;
-    flex-direction: row;
+    padding-left: 5%;
 }
