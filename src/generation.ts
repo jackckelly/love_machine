@@ -42,10 +42,10 @@ export async function generateTranscript() {
         const output = await chain.invoke({
             input: "dummy",
         });
-
+        console.log(output.content);
         transcript.push([turn, String(output.content)]);
     }
     return transcript;
 }
 
-generateTranscript().then((e) => console.log(e));
+//generateTranscript().then((e) => console.log(e));
