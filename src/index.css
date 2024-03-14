@@ -58,3 +58,8 @@ h2 {
 #editor_container {
     /* display: none;*/
 }
+
+.hearts {
+    filter: invert(50%) sepia(68%) saturate(1506%) hue-rotate(278deg)
+        brightness(105%) contrast(103%);
+}

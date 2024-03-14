@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Generated schema for Root",
+    "type": "object",
+    "properties": {
+        "first_name": {
+            "type": "string"
+        },
+        "age": {
+            "type": "number"
+        },
+        "job": {
+            "type": "string"
+        },
+        "city": {
+            "type": "string"
+        },
+        "hobbies": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "question_1": {
+            "type": "string"
+        },
+        "question_2": {
+            "type": "string"
+        },
+        "question_3": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "first_name",
+        "age",
+        "job",
+        "city",
+        "hobbies",
+        "question_1",
+        "question_2",
+        "question_3"
+    ]
+}
