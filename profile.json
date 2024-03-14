@@ -12,9 +12,6 @@
         "job": {
             "type": "string"
         },
-        "city": {
-            "type": "string"
-        },
         "hobbies": {
             "type": "array",
             "items": {
@@ -35,7 +32,6 @@
         "first_name",
         "age",
         "job",
-        "city",
         "hobbies",
         "question_1",
         "question_2",

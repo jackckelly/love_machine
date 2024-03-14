@@ -1,13 +1,55 @@
 import { useState, useCallback, useRef, MutableRefObject } from "react";
 import { Hearts } from "svg-loaders-react";
 
-import { generateProfile } from "./generation.ts";
+import { ProfileData, generateProfile } from "./generation.ts";
 import Webcam from "react-webcam";
+import { addKeyword } from "@hyperjump/json-schema/experimental";
 
-function Profile(props) {
+type QuestionCardProps = {
+    question: string;
+    answer: string;
+    id: string;
+};
+
+function QuestionCard(props: QuestionCardProps) {
     return (
-        <div>
-            <div></div>
+        <div className="question_card" id={props.id}>
+            <div className="question">{props.question}</div>
+            <div className="answer">{props.answer}</div>
+        </div>
+    );
+}
+
+function Profile(props: ProfileData) {
+    if (!props.success) {
+        return <div className="profile_fail"></div>;
+    }
+    const questions = props.questions.map(([q, a], index) => {
+        return (
+            <QuestionCard
+                id={`qc_${index}`}
+                question={q}
+                answer={a}
+            ></QuestionCard>
+        );
+    });
+
+    const hobbies = props.hobbies.map((h) => (
+        <div className="hobby_card">{h}</div>
+    ));
+
+    return (
+        <div
+            className="profile_card"
+            id={`profile_${props.first_name}_${props.age}`}
+        >
+            <div className="column">
+                <img className="profile_photo" src={props.image} />
+                <div className="profile_header">{`${props.first_name}, ${props.age}`}</div>
+                <div className="profile_job">{props.job}</div>
+                <div className="profile_hobbies">{hobbies}</div>
+                {questions}
+            </div>
         </div>
     );
 }
@@ -66,10 +108,29 @@ async function crop(url: string, aspectRatio: number): Promise<string> {
     });
 }
 
+class Profiles {
+    profiles: ProfileData[];
+    constructor() {
+        this.profiles = [];
+    }
+
+    withProfile(profile: ProfileData): Profiles {
+        let newProfiles = new Profiles();
+        for (const p of this.profiles) {
+            newProfiles.profiles.push(p);
+        }
+
+        newProfiles.profiles.push(profile);
+        return newProfiles;
+    }
+}
+
 function Casting() {
     const webcamRef = useRef() as MutableRefObject<Webcam>;
     const [imgSrc, setImgSrc] = useState("");
     const [loading, setLoading] = useState(false);
+    const [createNew, setCreateNew] = useState(true);
+    const [profiles, setProfiles] = useState(new Profiles());
 
     const capture = useCallback(() => {
         if (webcamRef) {
@@ -81,17 +142,40 @@ function Casting() {
     const confirm = useCallback(() => {
         console.log("confirm");
         setLoading(true);
-        generateProfile(imgSrc);
+        generateProfile(imgSrc).then((profile) => {
+            setProfiles((current) => current.withProfile(profile));
+            setLoading(false);
+            setCreateNew(false);
+        });
     }, [imgSrc]);
 
     const reject = useCallback(() => {
         setImgSrc("");
     }, [setImgSrc]);
 
+    const addNew = useCallback(() => {
+        setCreateNew(true);
+    }, [setCreateNew]);
+
+    const send = useCallback(() => {
+        setCreateNew(true);
+    }, [setCreateNew]);
+
+    const profileDivs = profiles.profiles.map((profile) => (
+        <Profile {...profile}></Profile>
+    ));
+
+    const displayCamera = !imgSrc && createNew;
+    const displayConfirm = imgSrc && createNew && !loading;
+    const displayLoading = loading && createNew;
+    const displayProfile = !loading && !createNew;
+
     return (
         <div id="casting_call">
-            <h1> CASTING CALL</h1>
-            <div id="camera_container">
+            <div
+                id="camera_container"
+                style={displayCamera ? {} : { display: "none" }}
+            >
                 <Webcam
                     audio={false}
                     ref={webcamRef}
@@ -101,13 +185,28 @@ function Casting() {
                 />
                 <button onClick={capture}>Capture</button>
             </div>
-            <div id="confirm_container">
-                <img src={imgSrc} />
-                <button onClick={reject}>Retake</button>
-                <button onClick={confirm}>Confirm</button>
-            </div>
-            <div id="loading_container">
+            {displayConfirm && (
+                <div id="confirm_container">
+                    <img src={imgSrc} />
+                    <button onClick={reject}>Retake</button>
+                    <button onClick={confirm}>Confirm</button>
+                </div>
+            )}
+            <div
+                id="loading_container"
+                style={displayLoading ? {} : { display: "none" }}
+            >
                 <Hearts className="hearts"></Hearts>
+            </div>
+            <div
+                className="profiles_container"
+                style={displayProfile ? {} : { display: "none" }}
+            >
+                {profileDivs}
+                <div className="column">
+                    <button onClick={addNew}>New Contestant</button>
+                    <button onClick={send}>Start!</button>
+                </div>
             </div>
         </div>
     );

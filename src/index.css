@@ -27,6 +27,7 @@ h3 {
 }
 .text_container {
     text-align: left;
+    cursor: pointer;
 }
 .span_highlighted {
     background-color: yellow;
@@ -60,6 +61,85 @@ h2 {
 }
 
 .hearts {
+    margin-top: 100px;
+    line-height: 40px;
+    min-width: 80%;
+    transform: scale(3);
     filter: invert(50%) sepia(68%) saturate(1506%) hue-rotate(278deg)
         brightness(105%) contrast(103%);
+}
+
+.profile_container {
+    background-color: #eee;
+    text-align: left;
+    max-width: 400px;
+    display: flex;
+    flex-direction: row;
+    padding-right: 5px;
+}
+
+.profiles_container {
+    display: flex;
+    flex-direction: row;
+    text-align: left;
+    max-width: 400px;
+}
+
+.profile_photo {
+    align-self: center;
+    max-width: 400px;
+}
+
+.profile_header {
+    font-size: 36px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.profile_job {
+    font-size: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.hobby_card {
+    font-size: 14px;
+    background-color: purple;
+    font-weight: 800;
+    border: none;
+    color: white;
+    padding: 8px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    margin: 4px 2px;
+    border-radius: 16px;
+    margin-left: 10px;
+}
+
+.question_card {
+    background-color: white;
+    border: none;
+    color: black;
+    padding: 10px 20px;
+    text-align: left;
+    text-decoration: none;
+    display: inline-block;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border-radius: 16px;
+}
+
+.question {
+    align-content: top;
+    stroke-width: 2px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.answer {
+    align-content: bottom;
+    font-size: 20px;
 }

@@ -1,8 +1,9 @@
-import { validate } from "@hyperjump/json-schema/draft-07";
+import { registerSchema, validate } from "@hyperjump/json-schema/draft-07";
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate, MessagesPlaceholder } from "langchain/prompts";
 import { AIMessage, HumanMessage } from "langchain/schema";
 import OpenAI from "openai";
+import profile from "../profile.json";
 
 let profile_questions = [
     "A life goal of mine",
@@ -47,17 +48,13 @@ const openai = new OpenAI({
     dangerouslyAllowBrowser: true,
 });
 
-const validProfile = await validate("./profile.json");
-console.log(validProfile);
-
-function get_system_prompt() {
+function get_system_prompt(): string[] {
     profile_questions.sort((a, b) => 0.5 - Math.random());
     let prompt = `You create fun, fake dating profile for fictional characters on reality show.
     Using an image as inspiration, you invent a fictious character and output their dating app profile as JSON with the following fields
     "first_name" - the character's first name
     "age" - the character's age
     "job" - the character's job
-    "city" - the city the character goes to work
     "hobbies" - a list of 3-5 hobbies or pasttimes the character is passionate about. Each should be at most two words.
     "question_1" - a half sentence response finishing the conversation prompt "${profile_questions[0]}". Do not repeat the prompt.
     "question_2" - a half sentence response finishing the conversation prompt "${profile_questions[1]}". Do not repeat the prompt.
@@ -71,13 +68,18 @@ function get_system_prompt() {
     ];
 }
 
-export async function generateProfile(imageString: string) {
+registerSchema(profile, "https://jckelly.xyz/schema");
+const isValidProfile = await validate("https://jckelly.xyz/schema");
+
+export async function generateProfile(
+    imageString: string
+): Promise<ProfileData> {
     console.log(imageString);
     let system_prompt = get_system_prompt();
     let response = "";
     let recievedValidResponse = false;
-    let profile = {};
-    let questions = [];
+    let profile = null;
+    let questions: string[] = [];
     for (let i = 0; i < 3 && !recievedValidResponse; i++) {
         const profileCompletion = await openai.chat.completions.create({
             model: "gpt-4-vision-preview",
@@ -122,21 +124,59 @@ export async function generateProfile(imageString: string) {
 
         profile = JSON.parse(response);
 
-        console.log(validProfile(profile));
-        if (true) {
-            recievedValidResponse = true;
-        }
+        recievedValidResponse = isValidProfile(profile).valid;
+    }
+
+    if (recievedValidResponse) {
+        let question_sets = [
+            [questions[0], profile.question_1],
+            [questions[1], profile.question_2],
+            [questions[2], profile.question_3],
+        ];
+        profile.questions = question_sets;
+        profile.image = imageString;
+        profile.success = true;
+    } else {
+        profile.success = false;
     }
 
     return profile;
 }
 
-export async function generateTranscript() {
-    const model = new ChatOpenAI({
-        temperature: 0.9,
-        modelName: "gpt-3.5-turbo",
-        openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY,
+export type ProfileData = {
+    first_name: string;
+    age: number;
+    job: string;
+    hobbies: string[];
+    questions: [string, string][];
+    success: boolean;
+    image: string;
+};
+
+function profile_prompt(profile) {
+    let system_prompt = `You help run a new dating reality show called "Love Machine". On "Love Machine", singles looking for romance are paired up to go on dates in hopes of finding the partners of their dreams.
+    You will be given descriptions of two contestants. You must generate a transcript of their successful first date and return it as JSON.
+    All dialogue should be accessible via field name "dialogue", which stories an array of ordered [speaker, dialogue] arrays.`;
+    return system_prompt;
+}
+export async function generateTranscript(c1, c2) {
+    let system_prompt = `You help run a new dating reality show called "Love Machine". On "Love Machine", singles looking for romance are paired up to go on dates in hopes of finding the partners of their dreams.
+You will be given descriptions of two contestants. You must generate a transcript of their successful first date and return it as JSON.
+All dialogue should be accessible via field name "dialogue", which stories an array of ordered [speaker, dialogue] arrays.`;
+    const jsonCleanUp = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        response_format: { type: "json_object" },
+        messages: [
+            {
+                role: "system",
+                content: system_prompt,
+            },
+        ],
+        max_tokens: 2000,
     });
+
+    let transcript = jsonCleanUp.choices[0].message.content || "";
+    /*
     const guy_prompt =
         "You are James, a 25 year old contestant on a dating show. You are talking to Jennifer, a fellow contestant. She's a woman you are physically and romantically attracted to.";
     const girl_prompt =
@@ -170,7 +210,9 @@ export async function generateTranscript() {
         });
         console.log(output.content);
         transcript.push([turn, String(output.content)]);
-    }
+
+        
+    }*/
     return transcript;
 }
 
