@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 
-import { generateTranscript } from "./generation.ts";
+import { generateTranscript, DialogueEntry } from "./generation.ts";
 
 let test_data = [
     [
@@ -35,16 +35,6 @@ let test_data = [
         "Yes, sir. I, my own opinion of that is that he, uh, that he just will hang in where he is. I mean, I think he, uh, that, at the moment I think that's in, in as good shape as it can be. Uh, you never know -- lot of...",
     ],
 ];
-
-class DialogueEntry {
-    speaker: string;
-    text: string;
-
-    public constructor(speaker: string, text: string) {
-        this.speaker = speaker;
-        this.text = text;
-    }
-}
 
 class Highlights {
     highlights: Map<number, [number, number][]>;
@@ -131,12 +121,13 @@ for (const [id, text] of test_data) {
 }
 console.log(dialogue);
 
-function Editor() {
+function Editor(props: { dialogue: DialogueEntry[] }) {
     // const [highlight, setHighlight] = useState(false);
     const [transcriptIndex, setTranscriptIndex] = useState(-1);
     const [highlightStart, setHighlightStart] = useState(-1);
-    const [transcript, setTranscript] = useState(dialogue);
     const [highlights, setHighlights] = useState(new Highlights());
+    //const [editorOn, setEditorOn] = useState(false);
+    const [edits, setEdits] = useState(new Array<Highlights>());
 
     const handleMouseUp = useCallback((e: MouseEvent) => {
         setHighlightStart(() => -1);
@@ -146,6 +137,8 @@ function Editor() {
         });
         console.log("no highlight");
     }, []);
+
+    let transcript = props.dialogue;
 
     useEffect(() => {
         document.addEventListener("mouseup", handleMouseUp);
@@ -163,6 +156,7 @@ function Editor() {
         );
     };
 
+    /*
     const handleRegenerate = () => {
         generateTranscript().then((value) => {
             let new_transcript: DialogueEntry[] = [];
@@ -174,7 +168,25 @@ function Editor() {
             setTranscript(() => new_transcript);
             setHighlights(() => new Highlights());
         });
+    };*/
+
+    const clear = () => {
+        setHighlightStart(-1);
+        setTranscriptIndex(-1);
+        setHighlights(new Highlights());
     };
+
+    const save = () => {
+        let h = highlights;
+        setHighlights(new Highlights());
+        setEdits((current) => {
+            let copy = [...current];
+            copy.push(h);
+            return copy;
+        });
+    };
+
+    const finish = () => {};
 
     const handleHighlightEnd = (index: number, end: number) => {
         const start = highlightStart;
@@ -272,11 +284,13 @@ function Editor() {
                 {transcript_entries}
             </div>
             <div id="edited">
-                <h2>EDIT</h2>
+                <h2>EDIT {edits.length + 1}</h2>
                 {jsx_rows}
             </div>
-            <div id="extra">
-                <button onClick={(e) => handleRegenerate()}>Regenerate</button>
+            <div>
+                <button onClick={(e) => clear()}>Clear</button>
+                <button onClick={(e) => save()}>Save</button>
+                <button onClick={(e) => finish()}>Finish</button>
             </div>
         </div>
     );

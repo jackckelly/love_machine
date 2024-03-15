@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Generated schema for Root",
+    "type": "object",
+    "properties": {
+        "dialogue": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "speaker": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    }
+                },
+                "required": ["speaker", "text"]
+            }
+        }
+    },
+    "required": ["dialogue"]
+}

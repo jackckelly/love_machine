@@ -1,9 +1,13 @@
 import { useState, useCallback, useRef, MutableRefObject } from "react";
 import { Hearts } from "svg-loaders-react";
 
-import { ProfileData, generateProfile } from "./generation.ts";
+import {
+    DialogueEntry,
+    ProfileData,
+    generateProfile,
+    generateTranscript,
+} from "./generation.ts";
 import Webcam from "react-webcam";
-import { addKeyword } from "@hyperjump/json-schema/experimental";
 
 type QuestionCardProps = {
     question: string;
@@ -125,7 +129,8 @@ class Profiles {
     }
 }
 
-function Casting() {
+function Casting(props: { update: (transcript: DialogueEntry[]) => void }) {
+    let updateCallback = props.update;
     const webcamRef = useRef() as MutableRefObject<Webcam>;
     const [imgSrc, setImgSrc] = useState("");
     const [loading, setLoading] = useState(false);
@@ -143,6 +148,7 @@ function Casting() {
         console.log("confirm");
         setLoading(true);
         generateProfile(imgSrc).then((profile) => {
+            setImgSrc("");
             setProfiles((current) => current.withProfile(profile));
             setLoading(false);
             setCreateNew(false);
@@ -157,9 +163,21 @@ function Casting() {
         setCreateNew(true);
     }, [setCreateNew]);
 
-    const send = useCallback(() => {
-        setCreateNew(true);
-    }, [setCreateNew]);
+    const startConversation = useCallback(() => {
+        console.log(profiles.profiles);
+        if (profiles.profiles.length < 2) {
+            return;
+        } else {
+            let p1 = profiles.profiles[0];
+            let p2 = profiles.profiles[1];
+            setLoading(true);
+            generateTranscript(p1, p2).then((transcript) => {
+                console.log(transcript);
+                updateCallback(transcript);
+                setLoading(false);
+            });
+        }
+    }, [setCreateNew, setLoading, profiles, updateCallback]);
 
     const profileDivs = profiles.profiles.map((profile) => (
         <Profile {...profile}></Profile>
@@ -167,7 +185,7 @@ function Casting() {
 
     const displayCamera = !imgSrc && createNew;
     const displayConfirm = imgSrc && createNew && !loading;
-    const displayLoading = loading && createNew;
+    const displayLoading = loading;
     const displayProfile = !loading && !createNew;
 
     return (
@@ -205,7 +223,7 @@ function Casting() {
                 {profileDivs}
                 <div className="column">
                     <button onClick={addNew}>New Contestant</button>
-                    <button onClick={send}>Start!</button>
+                    <button onClick={startConversation}>Start!</button>
                 </div>
             </div>
         </div>

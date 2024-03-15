@@ -3,7 +3,18 @@ import { ChatOpenAI } from "@langchain/openai";
 import { ChatPromptTemplate, MessagesPlaceholder } from "langchain/prompts";
 import { AIMessage, HumanMessage } from "langchain/schema";
 import OpenAI from "openai";
-import profile from "../profile.json";
+import profile_schema from "./schemas/profile.json";
+import dialogue_schema from "./schemas/dialogue.json";
+
+export class DialogueEntry {
+    speaker: string;
+    text: string;
+
+    public constructor(speaker: string, text: string) {
+        this.speaker = speaker;
+        this.text = text;
+    }
+}
 
 let profile_questions = [
     "A life goal of mine",
@@ -68,8 +79,10 @@ function get_system_prompt(): string[] {
     ];
 }
 
-registerSchema(profile, "https://jckelly.xyz/schema");
-const isValidProfile = await validate("https://jckelly.xyz/schema");
+registerSchema(profile_schema, "https://jckelly.xyz/schema/profile");
+const isValidProfile = await validate("https://jckelly.xyz/schema/profile");
+registerSchema(dialogue_schema, "https://jckelly.xyz/schema/dialogue");
+const isValidDialogue = await validate("https://jckelly.xyz/schema/dialogue");
 
 export async function generateProfile(
     imageString: string
@@ -97,6 +110,7 @@ export async function generateProfile(
                     ],
                 },
             ],
+            temperature: 1.0,
             max_tokens: 1000,
         });
         questions = system_prompt.slice(1);
@@ -153,66 +167,59 @@ export type ProfileData = {
     image: string;
 };
 
-function profile_prompt(profile) {
+function profile_prompt(profile: ProfileData) {
+    return `Contestant Bio: ${profile.first_name}
+${profile.first_name} is ${profile.age} and works as a ${profile.job}.
+${profile.first_name}'s hobbies include ${profile.hobbies.join(", ")}.
+When asked to share more about themselves, ${profile.first_name} responded:
+${profile.questions.map((q, a) => `${q}: ${a}`).join("\n")}
+They are excited to be a part of Love Machine.
+`;
+}
+
+export async function generateTranscript(c1: ProfileData, c2: ProfileData) {
     let system_prompt = `You help run a new dating reality show called "Love Machine". On "Love Machine", singles looking for romance are paired up to go on dates in hopes of finding the partners of their dreams.
     You will be given descriptions of two contestants. You must generate a transcript of their successful first date and return it as JSON.
-    All dialogue should be accessible via field name "dialogue", which stories an array of ordered [speaker, dialogue] arrays.`;
-    return system_prompt;
-}
-export async function generateTranscript(c1, c2) {
-    let system_prompt = `You help run a new dating reality show called "Love Machine". On "Love Machine", singles looking for romance are paired up to go on dates in hopes of finding the partners of their dreams.
-You will be given descriptions of two contestants. You must generate a transcript of their successful first date and return it as JSON.
-All dialogue should be accessible via field name "dialogue", which stories an array of ordered [speaker, dialogue] arrays.`;
-    const jsonCleanUp = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        response_format: { type: "json_object" },
-        messages: [
-            {
-                role: "system",
-                content: system_prompt,
-            },
-        ],
-        max_tokens: 2000,
-    });
+    All dialogue should be return as an ordered JSON array of "dialogue" objects, assigned to the field "dialogue". A dialogue object has two fields: "speaker" (string), the person talking; "text" (string), the things the person says.`;
 
-    let transcript = jsonCleanUp.choices[0].message.content || "";
-    /*
-    const guy_prompt =
-        "You are James, a 25 year old contestant on a dating show. You are talking to Jennifer, a fellow contestant. She's a woman you are physically and romantically attracted to.";
-    const girl_prompt =
-        "You are Jennifer, a 25 year old contestant on a dating show. You are talking to James, a fellow contestant. Hes's a man you are physically and romantically attracted to.";
+    let recievedValidResponse = false;
+    let transcript: DialogueEntry[] = [];
 
-    let guy_turn = true;
-    let transcript = [["James", "It's great to meet you."]];
-    for (let i = 0; i < 10; i++) {
-        guy_turn = !guy_turn;
-
-        let history = [];
-        let turn = guy_turn ? "James" : "Jennifer";
-
-        for (const [speaker, message] of transcript) {
-            if (speaker != turn) {
-                history.push(new AIMessage(message));
-            } else {
-                history.push(new HumanMessage(message));
-            }
-        }
-
-        const prompt = ChatPromptTemplate.fromMessages([
-            ["system", guy_turn ? guy_prompt : girl_prompt],
-            ...history,
-        ]);
-
-        const chain = prompt.pipe(model);
-
-        const output = await chain.invoke({
-            input: "dummy",
+    let p1 = profile_prompt(c1);
+    let p2 = profile_prompt(c2);
+    console.log(p1);
+    console.log(p2);
+    for (let i = 0; i < 3 && !recievedValidResponse; i++) {
+        const getTranscript = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            response_format: { type: "json_object" },
+            messages: [
+                {
+                    role: "system",
+                    content: system_prompt,
+                },
+                {
+                    role: "user",
+                    content: p1,
+                },
+                {
+                    role: "user",
+                    content: p2,
+                },
+                {
+                    role: "user",
+                    content: `${c1.first_name} and ${c2.first_name} are meeting for the first time, but have a strong initial attraction. Generate their first date conversation as transcript and return in as a JSON array.`,
+                },
+            ],
+            max_tokens: 2000,
         });
-        console.log(output.content);
-        transcript.push([turn, String(output.content)]);
 
-        
-    }*/
+        console.log(getTranscript);
+        let raw_transcript = getTranscript.choices[0].message.content || "";
+        let wrapped_transcript = JSON.parse(raw_transcript);
+        recievedValidResponse = isValidDialogue(wrapped_transcript).valid;
+        transcript = wrapped_transcript.dialogue;
+    }
     return transcript;
 }
 
