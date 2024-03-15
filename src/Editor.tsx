@@ -121,7 +121,10 @@ for (const [id, text] of test_data) {
 }
 console.log(dialogue);
 
-function Editor(props: { dialogue: DialogueEntry[] }) {
+function Editor(props: {
+    dialogue: DialogueEntry[];
+    finishCallback: () => void;
+}) {
     // const [highlight, setHighlight] = useState(false);
     const [transcriptIndex, setTranscriptIndex] = useState(-1);
     const [highlightStart, setHighlightStart] = useState(-1);
@@ -278,21 +281,26 @@ function Editor(props: { dialogue: DialogueEntry[] }) {
     }
 
     return (
-        <div id="editor_container" className="row">
-            <div id="transcript">
-                <h2>ORIGINAL</h2>
-                {transcript_entries}
+        <>
+            <h3>{"First Date Transcript <3"}</h3>
+            <div id="editor_container" className="row">
+                <div id="transcript">
+                    <h3>ORIGINAL</h3>
+                    {transcript_entries}
+                </div>
+                <div id="edited">
+                    <h3>EDIT {edits.length + 1}</h3>
+                    {jsx_rows}
+                </div>
+                <div>
+                    <button onClick={(e) => clear()}>Clear</button>
+                    <button onClick={(e) => save()}>Save</button>
+                    <button onClick={(e) => props.finishCallback()}>
+                        Finish
+                    </button>
+                </div>
             </div>
-            <div id="edited">
-                <h2>EDIT {edits.length + 1}</h2>
-                {jsx_rows}
-            </div>
-            <div>
-                <button onClick={(e) => clear()}>Clear</button>
-                <button onClick={(e) => save()}>Save</button>
-                <button onClick={(e) => finish()}>Finish</button>
-            </div>
-        </div>
+        </>
     );
 }
 

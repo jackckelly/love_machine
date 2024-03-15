@@ -86,7 +86,6 @@ h2 {
 }
 
 .hearts {
-    margin-top: 100px;
     line-height: 40px;
     min-width: 80%;
     transform: scale(3);
@@ -113,6 +112,11 @@ h2 {
 .profile_photo {
     align-self: center;
     max-width: 400px;
+}
+
+.profile_mini_photo {
+    align-self: center;
+    max-width: 300px;
 }
 
 .profile_header {
@@ -167,4 +171,40 @@ h2 {
 .answer {
     align-content: bottom;
     font-size: 20px;
+}
+
+.button_container {
+    padding-top: 100px;
+}
+
+h1 {
+    font-size: 150px;
+}
+
+h2 {
+    font-size: 100px;
+    text-align: center;
+}
+
+#loading_container {
+    padding-top: 200px;
+}
+
+.loading_match_container {
+    padding-top: 0px;
+    display: inline;
+    align-content: center;
+}
+
+.mini_profile_container {
+    padding-top: 100px;
+    text-align: center;
+    display: inline-flex;
+    flex-direction: right;
+    align-content: center;
+}
+
+.profile_mini {
+    padding-left: 50px;
+    padding-right: 50px;
 }

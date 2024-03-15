@@ -24,6 +24,20 @@ function QuestionCard(props: QuestionCardProps) {
     );
 }
 
+function ProfileMini(props: ProfileData) {
+    return (
+        <div
+            className="profile_mini"
+            id={`profile_mini_${props.first_name}_${props.age}`}
+        >
+            <div className="column">
+                <img className="profile_mini_photo" src={props.image} />
+                <div className="profile_header">{props.first_name}</div>
+            </div>
+        </div>
+    );
+}
+
 function Profile(props: ProfileData) {
     if (!props.success) {
         return <div className="profile_fail"></div>;
@@ -135,6 +149,7 @@ function Casting(props: { update: (transcript: DialogueEntry[]) => void }) {
     const [imgSrc, setImgSrc] = useState("");
     const [loading, setLoading] = useState(false);
     const [createNew, setCreateNew] = useState(true);
+    const [hasMatch, setHasMatch] = useState(false);
     const [profiles, setProfiles] = useState(new Profiles());
 
     const capture = useCallback(() => {
@@ -171,6 +186,7 @@ function Casting(props: { update: (transcript: DialogueEntry[]) => void }) {
             let p1 = profiles.profiles[0];
             let p2 = profiles.profiles[1];
             setLoading(true);
+            setHasMatch(true);
             generateTranscript(p1, p2).then((transcript) => {
                 console.log(transcript);
                 updateCallback(transcript);
@@ -182,6 +198,27 @@ function Casting(props: { update: (transcript: DialogueEntry[]) => void }) {
     const profileDivs = profiles.profiles.map((profile) => (
         <Profile {...profile}></Profile>
     ));
+
+    const loadMatchDiv =
+        profiles.profiles.length == 2 ? (
+            <div className="loading_match_container">
+                <h2>It's a Match!</h2>
+                <Hearts className="hearts"></Hearts>
+                <div className="mini_profile_container">
+                    <ProfileMini {...profiles.profiles[0]}></ProfileMini>
+                    <h2>x</h2>
+                    <ProfileMini {...profiles.profiles[1]}></ProfileMini>
+                </div>
+            </div>
+        ) : (
+            <div></div>
+        );
+    const loadProfileDiv = (
+        <div id="loading_container">
+            <h2>Finding your profile...</h2>
+            <Hearts className="hearts"></Hearts>
+        </div>
+    );
 
     const displayCamera = !imgSrc && createNew;
     const displayConfirm = imgSrc && createNew && !loading;
@@ -201,21 +238,23 @@ function Casting(props: { update: (transcript: DialogueEntry[]) => void }) {
                     mirrored={true}
                     videoConstraints={videoConstraints}
                 />
-                <button onClick={capture}>Capture</button>
+                <div className="button_container">
+                    <button onClick={capture}>Capture</button>
+                </div>
             </div>
             {displayConfirm && (
                 <div id="confirm_container">
                     <img src={imgSrc} />
-                    <button onClick={reject}>Retake</button>
-                    <button onClick={confirm}>Confirm</button>
+                    <div className="button_container">
+                        <button onClick={reject}>Retake</button>
+                        <button onClick={confirm}>Confirm</button>
+                    </div>
                 </div>
             )}
-            <div
-                id="loading_container"
-                style={displayLoading ? {} : { display: "none" }}
-            >
-                <Hearts className="hearts"></Hearts>
-            </div>
+            <>
+                {loading && !hasMatch && loadProfileDiv}
+                {loading && hasMatch && loadMatchDiv}
+            </>
             <div
                 className="profiles_container"
                 style={displayProfile ? {} : { display: "none" }}
